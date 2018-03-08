@@ -2,44 +2,45 @@ import numpy as np
 import pandas as pd
 
 import torch
+from torch.utils.data import TensorDataset, DataLoader
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torchvision
+# import torchvision
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
-from sklearn.metrics import log_loss, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.neighbors import KNeighborsClassifier
 # from sklearn.manifold import TSNE
-from MulticoreTSNE import MulticoreTSNE as TSNE
+# from MulticoreTSNE import MulticoreTSNE as TSNE
 
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Linear(129, 256),
-            nn.Dropout(0.2),
+            nn.Linear(129, 200),
+            nn.Dropout(0.3),
             nn.ReLU()
         )
         self.layer2 = nn.Sequential(
-            nn.Linear(256, 256),
+            nn.Linear(200, 200),
             nn.Dropout(0.2),
             nn.ReLU()
         )
         self.output = nn.Sequential(
-            nn.Linear(256, 2),
-            nn.Softmax(dim=1)
+            nn.Linear(200, 1)
+            # nn.LogSoftmax(dim=1)
         )
 
     def forward(self, x):
         x = self.layer1(x)
         # x = self.layer2(x)
         x = self.output(x)
-        return x
+        return x.view(-1)
 
 
 print("Loading data...", end=" ", flush=True)
@@ -79,8 +80,8 @@ print("done.")
 # X = np.c_[X, X_knn[:, 1]]
 # X_val_knn = knn.predict_proba(X_val)
 # X_val = np.c_[X_val, X_val_knn[:, 1]]
-# test_data_knn = knn.predict_proba(test_data)
-# test_data = np.c_[test_data, test_data_knn[:, 1]]
+# # test_data_knn = knn.predict_proba(test_data)
+# # test_data = np.c_[test_data, test_data_knn[:, 1]]
 # print("done.")
 
 # Scaling
@@ -93,13 +94,11 @@ print("done.")
 
 # Training
 print("Training the Neural Network...", flush=True)
-trainset = torch.utils.data.TensorDataset(torch.Tensor(X),
-                                          torch.LongTensor(y))
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=300,
-                                          shuffle=True, num_workers=2)
+trainset = TensorDataset(torch.Tensor(X), torch.Tensor(y))
+trainloader = DataLoader(trainset, batch_size=300, shuffle=True, num_workers=2)
 
 net = Net()
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
 
 for epoch in range(40):
@@ -109,7 +108,7 @@ for epoch in range(40):
         inputs, labels = Variable(inputs), Variable(labels)
         optimizer.zero_grad()
         outputs = net(inputs)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs, labels.float())
         loss.backward()
         optimizer.step()
 
@@ -119,14 +118,13 @@ for epoch in range(40):
             running_loss = 0.0
 
 # Validation
-X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.LongTensor(y_val))
+X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
 output = net(X_val)
-# print(output)
-# val_loss = F.cross_entropy(output, y_val).data[0]
-val_loss = log_loss(y_val.data, output.data)
-pred = output.data.max(1, keepdim=True)[1]
-correct = pred.eq(y_val.data.view_as(pred)).long().cpu().sum()
-auc = roc_auc_score(y_val.data, output.data[:, 1])
+val_loss = F.binary_cross_entropy_with_logits(output, y_val).data[0]
+sigma_output = F.sigmoid(output)
+pred = sigma_output.data.numpy() > .5
+correct = np.sum(pred == y_val.data.numpy())
+auc = roc_auc_score(y_val.data, sigma_output.data)
 print(f"\nValidation set: Average loss: {val_loss:.4f}, "
       f"ROC AUC: {auc:.4f}, "
       f"Accuracy: {correct}/{len(y_val)} "
