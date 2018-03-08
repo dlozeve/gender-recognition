@@ -47,8 +47,8 @@ X_qda = qda.predict_proba(X)
 X = np.c_[X, X_qda[:, 1]]
 X_val_qda = qda.predict_proba(X_val)
 X_val = np.c_[X_val, X_val_qda[:, 1]]
-# test_data_qda = qda.predict_proba(test_data)
-# test_data = np.c_[test_data, test_data_qda[:, 1]]
+test_data_qda = qda.predict_proba(test_data)
+test_data = np.c_[test_data, test_data_qda[:, 1]]
 print("done.")
 
 # print("## K-Nearest Neighbours...", end=" ", flush=True)
@@ -83,7 +83,7 @@ print("## Scaling...", end=" ", flush=True)
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 X_val = scaler.transform(X_val)
-# test_data = scaler.transform(test_data)
+test_data = scaler.transform(test_data)
 print("done.")
 
 
@@ -126,7 +126,7 @@ for k in range(len(nets)):
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
 
-    for epoch in range(40):
+    for epoch in range(30):
         running_loss = 0.0
         running_correct = 0
         for i, data in enumerate(trainloader, 0):
@@ -169,11 +169,15 @@ print(f"\n=> Validation set: Average loss: {val_loss:.4f}, "
       f"Accuracy: {correct}/{len(y_val)} "
       f"({100. * correct/len(y_val):.1f}%)\n")
 
-# test_data = Variable(torch.Tensor(test_data))
-# test_data_pred = net[SPLITS-1](test_data)
-# print(test_data_pred.data[:, 1])
+test_data = Variable(torch.Tensor(test_data))
+output = 0
+for net in nets:
+    output += net(test_data)
+output /= len(nets)
+sigma_output = F.sigmoid(output)
+print(sigma_output.data)
 
-# submission = pd.DataFrame({'Id': range(1, 15001),
-#                            'ProbFemale': test_data_pred.data[:, 1]})
-# submission = submission[['Id', 'ProbFemale']]
-# submission.to_csv("submission.csv", index=False)
+submission = pd.DataFrame({'Id': range(1, 15001),
+                           'ProbFemale': sigma_output.data})
+submission = submission[['Id', 'ProbFemale']]
+submission.to_csv("submission.csv", index=False)
