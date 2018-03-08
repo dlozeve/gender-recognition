@@ -97,10 +97,6 @@ trainset = torch.utils.data.TensorDataset(torch.Tensor(X),
                                           torch.LongTensor(y))
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=300,
                                           shuffle=True, num_workers=2)
-testset = torch.utils.data.TensorDataset(torch.Tensor(X),
-                                         torch.LongTensor(y))
-testloader = torch.utils.data.DataLoader(testset, batch_size=300,
-                                         shuffle=True, num_workers=2)
 
 net = Net()
 criterion = nn.CrossEntropyLoss()
