@@ -103,6 +103,7 @@ optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
 
 for epoch in range(40):
     running_loss = 0.0
+    running_correct = 0
     for i, data in enumerate(trainloader, 0):
         inputs, labels = data
         inputs, labels = Variable(inputs), Variable(labels)
@@ -113,9 +114,13 @@ for epoch in range(40):
         optimizer.step()
 
         running_loss += loss.data[0]
+        pred = F.sigmoid(outputs).data.numpy() > .5
+        running_correct += np.sum(pred == labels.data.numpy())
         if i % 20 == 19:
-            print(f"[{epoch:2},{i+1:3}] loss: {running_loss/20:.3f}")
+            print(f"[{epoch:2},{i+1:3}] Loss: {running_loss/20:.3f}, "
+                  f"Accuracy: {100*running_correct/(20*len(outputs)):.1f}%")
             running_loss = 0.0
+            running_correct = 0
 
 # Validation
 X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
