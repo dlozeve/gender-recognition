@@ -82,10 +82,10 @@ print("done.")
 
 # Neural net definition
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size):
         super(Net, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Linear(129, 150),
+            nn.Linear(input_size, 150),
             nn.Dropout(0.4),
             nn.ReLU()
         )
@@ -110,7 +110,7 @@ print("Training the Neural Network...", flush=True)
 trainset = TensorDataset(torch.Tensor(X), torch.Tensor(y))
 trainloader = DataLoader(trainset, batch_size=300, shuffle=True, num_workers=2)
 
-net = Net()
+net = Net(X.shape[1])
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
 
