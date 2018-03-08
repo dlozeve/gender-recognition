@@ -16,31 +16,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from sklearn.neighbors import KNeighborsClassifier
 # from sklearn.manifold import TSNE
 # from MulticoreTSNE import MulticoreTSNE as TSNE
-
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Linear(129, 200),
-            nn.Dropout(0.3),
-            nn.ReLU()
-        )
-        self.layer2 = nn.Sequential(
-            nn.Linear(200, 200),
-            nn.Dropout(0.2),
-            nn.ReLU()
-        )
-        self.output = nn.Sequential(
-            nn.Linear(200, 1)
-            # nn.LogSoftmax(dim=1)
-        )
-
-    def forward(self, x):
-        x = self.layer1(x)
-        # x = self.layer2(x)
-        x = self.output(x)
-        return x.view(-1)
+# from xgboost import XGBClassifier
 
 
 print("Loading data...", end=" ", flush=True)
@@ -84,6 +60,17 @@ print("done.")
 # # test_data = np.c_[test_data, test_data_knn[:, 1]]
 # print("done.")
 
+# print("XGBoost...", end=" ", flush=True)
+# xgb = XGBClassifier(max_depth=3, learning_rate=0.1, n_estimators=1000,
+#                     gamma=10, min_child_weight=10,
+#                     objective='binary:logistic', n_jobs=4)
+# xgb.fit(X, y)
+# X_xgb = xgb.predict_proba(X)
+# X_val_xgb = xgb.predict_proba(X_val)
+# X = np.c_[X, X_xgb[:, 1]]
+# X_val = np.c_[X_val, X_val_xgb[:, 1]]
+# print("done.")
+
 # Scaling
 print("Scaling...", end=" ", flush=True)
 scaler = StandardScaler()
@@ -91,6 +78,32 @@ X = scaler.fit_transform(X)
 X_val = scaler.transform(X_val)
 # test_data = scaler.transform(test_data)
 print("done.")
+
+
+# Neural net definition
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Linear(129, 150),
+            nn.Dropout(0.4),
+            nn.ReLU()
+        )
+        self.layer2 = nn.Sequential(
+            nn.Linear(70, 200),
+            nn.Dropout(0.5),
+            nn.ReLU()
+        )
+        self.output = nn.Sequential(
+            nn.Linear(150, 1)
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        # x = self.layer2(x)
+        x = self.output(x)
+        return x.view(-1)
+
 
 # Training
 print("Training the Neural Network...", flush=True)
