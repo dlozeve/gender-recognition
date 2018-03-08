@@ -1,0 +1,13 @@
+*~
+data/
+*.aux
+*.log
+*.out
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.synctex.gz
+*/auto/
+.ipynb_checkpoints/
+__pycache__/
