@@ -23,6 +23,8 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from MulticoreTSNE import MulticoreTSNE as TSNE
 # from xgboost import XGBClassifier
 
+GPU = False
+
 start_time = time.time()
 
 print("# Loading data...", end=" ", flush=True)
@@ -138,16 +140,24 @@ for k, (train, test) in enumerate(skf.split(X, y)):
                             shuffle=True, num_workers=2)
 
     net = Net(X_train.shape[1])
+    if GPU:
+        net.cuda()
     # print(net)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
+    if GPU:
+        criterion.cuda()
 
     for epoch in range(20):
         running_loss = 0.0
         running_correct = 0
         for i, data in enumerate(trainloader, 0):
             inputs, labels = data
-            inputs, labels = Variable(inputs), Variable(labels)
+            if GPU:
+                inputs = Variable(inputs.cuda())
+                labels = Variable(labels.cuda())
+            else:
+                inputs, labels = Variable(inputs), Variable(labels)
             optimizer.zero_grad()
             outputs = net(inputs)
             loss = criterion(outputs, labels.float())
@@ -155,8 +165,8 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             optimizer.step()
 
             running_loss += loss.data[0]
-            pred = F.sigmoid(outputs).data.numpy() > .5
-            running_correct += np.sum(pred == labels.data.numpy())
+            pred = F.sigmoid(outputs).cpu().data.numpy() > .5
+            running_correct += np.sum(pred == labels.cpu().data.numpy())
             # if i % 20 == 19:
             #     print(f"[{epoch:2},{i+1:3}] Loss: {running_loss/20:.3f}, "
             #           f"Accuracy: "
@@ -174,13 +184,16 @@ for k, (train, test) in enumerate(skf.split(X, y)):
     for i, data in enumerate(testloader, 0):
         inputs, labels = data
         inputs, labels = Variable(inputs), Variable(labels)
+        if GPU:
+            inputs.cuda()
+            labels.cuda()
         net.eval()
         output = net(inputs)
         val_loss += F.binary_cross_entropy_with_logits(
-            output, labels.float()).data[0]
+            output, labels.float()).cpu().data[0]
         sigma_output = F.sigmoid(output)
-        pred = sigma_output.data.numpy() > .5
-        correct += np.sum(pred == labels.data.numpy())
+        pred = sigma_output.cpu().data.numpy() > .5
+        correct += np.sum(pred == labels.cpu().data.numpy())
     val_loss /= len(testloader)
     print(f"   -> Test set: Average loss: {val_loss:.4f}, "
           f"Accuracy: {correct}/{((i+1)*testloader.batch_size)} "
@@ -191,15 +204,18 @@ for k, (train, test) in enumerate(skf.split(X, y)):
 
 # Validation
 X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
+if GPU:
+    X_val.cuda()
+    y_val.cuda()
 output = 0
 for k, net in enumerate(nets):
     net.eval()
     output += net(X_val) * 1/losses[k]
 output /= np.sum(1/losses)
-val_loss = F.binary_cross_entropy_with_logits(output, y_val).data[0]
+val_loss = F.binary_cross_entropy_with_logits(output, y_val).cpu().data[0]
 sigma_output = F.sigmoid(output)
-pred = sigma_output.data.numpy() > .5
-correct = np.sum(pred == y_val.data.numpy())
+pred = sigma_output.cpu().data.numpy() > .5
+correct = np.sum(pred == y_val.cpu().data.numpy())
 auc = roc_auc_score(y_val.data, sigma_output.data)
 print(f"\n=> Validation set: Average loss: {val_loss:.4f}, "
       f"ROC AUC: {auc:.4f}, "
@@ -207,15 +223,17 @@ print(f"\n=> Validation set: Average loss: {val_loss:.4f}, "
       f"({100. * correct/len(y_val):.1f}%)\n")
 
 test_data = Variable(torch.Tensor(test_data))
+if GPU:
+    test_data.cuda()
 output = 0
 for net in nets:
     output += net(test_data)
 output /= len(nets)
 sigma_output = F.sigmoid(output)
-print(sigma_output.data)
+print(sigma_output.cpu().data)
 
 submission = pd.DataFrame({'Id': range(1, 15001),
-                           'ProbFemale': sigma_output.data})
+                           'ProbFemale': sigma_output.cpu().data})
 submission = submission[['Id', 'ProbFemale']]
 submission.to_csv("submission.csv", index=False)
 
