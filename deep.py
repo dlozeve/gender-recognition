@@ -10,7 +10,7 @@ import torch.optim as optim
 # import torchvision
 
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import roc_auc_score
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from sklearn.neighbors import KNeighborsClassifier
@@ -114,19 +114,25 @@ class Net(nn.Module):
 
 # Training
 print("# Training the Neural Networks...", flush=True)
-nets = list(range(20))
-for k in range(len(nets)):
+nets = list(range(30))
+skf = StratifiedKFold(n_splits=len(nets), shuffle=True)
+for k, (train, test) in enumerate(skf.split(X, y)):
+    # X_train = X[train, :]
+    # y_train = y[train]
+    X_train = X
+    y_train = y
+
     print(f"\t-> Training neural net {k}")
-    trainset = TensorDataset(torch.Tensor(X), torch.Tensor(y))
+    trainset = TensorDataset(torch.Tensor(X_train), torch.Tensor(y_train))
     trainloader = DataLoader(trainset, batch_size=300,
                              shuffle=True, num_workers=2)
 
-    net = Net(X.shape[1])
+    net = Net(X_train.shape[1])
     # print(net)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
 
-    for epoch in range(30):
+    for epoch in range(20):
         running_loss = 0.0
         running_correct = 0
         for i, data in enumerate(trainloader, 0):
