@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+import time
+
 import numpy as np
 import pandas as pd
 
@@ -19,6 +23,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from MulticoreTSNE import MulticoreTSNE as TSNE
 # from xgboost import XGBClassifier
 
+start_time = time.time()
 
 print("# Loading data...", end=" ", flush=True)
 X = pd.read_csv("data/train.data.csv")
@@ -213,3 +218,6 @@ submission = pd.DataFrame({'Id': range(1, 15001),
                            'ProbFemale': sigma_output.data})
 submission = submission[['Id', 'ProbFemale']]
 submission.to_csv("submission.csv", index=False)
+
+time_elapsed = time.time() - start_time
+print(time.strftime("Timing: %Hh %Mm %Ss", time.gmtime(time_elapsed)))
