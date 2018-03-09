@@ -157,6 +157,7 @@ for k in range(len(nets)):
 X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
 output = 0
 for net in nets:
+    net.eval()
     output += net(X_val)
 output /= len(nets)
 val_loss = F.binary_cross_entropy_with_logits(output, y_val).data[0]
