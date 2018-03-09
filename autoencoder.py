@@ -27,6 +27,37 @@ class Autoencoder(nn.Module):
         return x
 
 
+def train_autoencoder(X, size=32, epochs=30, verbose=0):
+    ae_trainset = TensorDataset(torch.Tensor(X), torch.Tensor(X))
+    ae_trainloader = DataLoader(ae_trainset, batch_size=256,
+                                shuffle=True, num_workers=2)
+    autoencoder = Autoencoder(X.shape[1], 32)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adadelta(autoencoder.parameters(),
+                               lr=1.0, rho=0.95, weight_decay=1e-5)
+    if verbose == 1:
+        print("epoch #", end=" ", flush=True)
+    for epoch in range(epochs):
+        if verbose > 1:
+            running_loss = 0.0
+        for i, data in enumerate(ae_trainloader, 0):
+            inputs, labels = data
+            inputs, labels = Variable(inputs), Variable(labels)
+            optimizer.zero_grad()
+            outputs = autoencoder(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            if verbose > 1:
+                running_loss += loss.data[0]
+                if i % 50 == 49:
+                    print(f"[{epoch:3},{i+1:3}] Loss: {running_loss/50:.3f}")
+                    running_loss = 0.0
+        if verbose == 1:
+            print(epoch+1, end=" ", flush=True)
+    return autoencoder
+
+
 if __name__ == "__main__":
     print("# Loading data...", end=" ", flush=True)
     X = pd.read_csv("data/train.data.csv")
@@ -37,29 +68,5 @@ if __name__ == "__main__":
     test_data = test_data.values
     print("done.")
 
-    trainset = TensorDataset(torch.Tensor(X), torch.Tensor(X))
-    trainloader = DataLoader(trainset, batch_size=256,
-                             shuffle=True, num_workers=2)
-
-    net = Autoencoder(X.shape[1], 32)
-    criterion = nn.MSELoss()
-    optimizer = optim.Adadelta(net.parameters(),
-                               lr=1.0, rho=0.95, weight_decay=1e-5)
-
-    for epoch in range(50):
-        running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
-            inputs, labels = data
-            inputs, labels = Variable(inputs), Variable(labels)
-            optimizer.zero_grad()
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            running_loss += loss.data[0]
-            if i % 10 == 9:
-                print(f"[{epoch:3},{i+1:3}] Loss: {running_loss/10:.3f}")
-                running_loss = 0.0
-
+    net = train_autoencoder(X, verbose=2)
     print(net.layer1(Variable(torch.Tensor(X))))

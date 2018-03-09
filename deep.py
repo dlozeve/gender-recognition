@@ -23,7 +23,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from MulticoreTSNE import MulticoreTSNE as TSNE
 # from xgboost import XGBClassifier
 
-from autoencoder import Autoencoder
+from autoencoder import train_autoencoder
 
 
 GPU = False
@@ -53,29 +53,7 @@ X, X_val, y, y_val = train_test_split(X, y, test_size=0.2,
 
 print("## Autoencoder")
 print("### Train...", end=" ", flush=True)
-ae_trainset = TensorDataset(torch.Tensor(X), torch.Tensor(X))
-ae_trainloader = DataLoader(ae_trainset, batch_size=256,
-                            shuffle=True, num_workers=2)
-autoencoder = Autoencoder(X.shape[1], 32)
-criterion = nn.MSELoss()
-optimizer = optim.Adadelta(autoencoder.parameters(),
-                           lr=1.0, rho=0.95, weight_decay=1e-5)
-print("epoch #", end=" ", flush=True)
-for epoch in range(20):
-    running_loss = 0.0
-    for i, data in enumerate(ae_trainloader, 0):
-        inputs, labels = data
-        inputs, labels = Variable(inputs), Variable(labels)
-        optimizer.zero_grad()
-        outputs = autoencoder(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        # running_loss += loss.data[0]
-        # if i % 50 == 49:
-        #     print(f"[{epoch:3},{i+1:3}] Loss: {running_loss/50:.3f}")
-        #     running_loss = 0.0
-    print(epoch+1, end=" ", flush=True)
+autoencoder = train_autoencoder(X, size=32, epochs=30, verbose=1)
 print("done.")
 print("### Evaluate...", end=" ", flush=True)
 autoencoder.eval()
@@ -106,8 +84,8 @@ print("done.")
 # X = np.c_[X, X_knn[:, 1]]
 # X_val_knn = knn.predict_proba(X_val)
 # X_val = np.c_[X_val, X_val_knn[:, 1]]
-# # test_data_knn = knn.predict_proba(test_data)
-# # test_data = np.c_[test_data, test_data_knn[:, 1]]
+# test_data_knn = knn.predict_proba(test_data)
+# test_data = np.c_[test_data, test_data_knn[:, 1]]
 # print("done.")
 
 # print("## XGBoost...", end=" ", flush=True)
