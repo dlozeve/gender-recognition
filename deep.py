@@ -43,8 +43,7 @@ print("# Preprocessing")
 # X = np.c_[X, X_proj]
 # print("done.")
 
-X, X_val, y, y_val = train_test_split(X, y, test_size=0.2,
-                                      stratify=y)
+X, X_val, y, y_val = train_test_split(X, y, test_size=0.2, stratify=y)
 
 X, y, X_val, test_data = preprocess(X, y, X_val, test_data, verbose=True)
 
@@ -55,11 +54,13 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Linear(input_size, 150),
+            nn.BatchNorm1d(150, momentum=0.2),
             nn.Dropout(0.5),
             nn.ReLU()
         )
         # self.layer2 = nn.Sequential(
-        #     nn.Linear(70, 200),
+        #     nn.Linear(150, 64),
+        #     nn.BatchNorm1d(64),
         #     nn.Dropout(0.5),
         #     nn.ReLU()
         # )
@@ -183,8 +184,9 @@ if GPU:
     test_data.cuda()
 output = 0
 for net in nets:
-    output += net(test_data)
-output /= len(nets)
+    net.eval()
+    output += net(test_data) * 1/losses[k]
+output /= np.sum(1/losses)
 sigma_output = F.sigmoid(output)
 print(sigma_output.cpu().data)
 
