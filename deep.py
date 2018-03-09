@@ -9,8 +9,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 # import torchvision
 
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.preprocessing import StandardScaler
+# from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.metrics import roc_auc_score
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # from sklearn.neighbors import KNeighborsClassifier
@@ -93,7 +94,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Linear(input_size, 150),
-            nn.Dropout(0.4),
+            nn.Dropout(0.5),
             nn.ReLU()
         )
         # self.layer2 = nn.Sequential(
@@ -114,18 +115,22 @@ class Net(nn.Module):
 
 # Training
 print("# Training the Neural Networks...", flush=True)
-nets = list(range(30))
-skf = StratifiedKFold(n_splits=len(nets), shuffle=True)
+nets = list(range(20))
+losses = np.zeros(len(nets))
+skf = StratifiedShuffleSplit(n_splits=len(nets), test_size=0.15)
 for k, (train, test) in enumerate(skf.split(X, y)):
-    # X_train = X[train, :]
-    # y_train = y[train]
-    X_train = X
-    y_train = y
+    X_train = X[train, :]
+    y_train = y[train]
+    X_test = X[test, :]
+    y_test = y[test]
 
-    print(f"\t-> Training neural net {k}")
+    print(f"## Training neural net {k}")
     trainset = TensorDataset(torch.Tensor(X_train), torch.Tensor(y_train))
     trainloader = DataLoader(trainset, batch_size=300,
                              shuffle=True, num_workers=2)
+    testset = TensorDataset(torch.Tensor(X_test), torch.Tensor(y_test))
+    testloader = DataLoader(testset, batch_size=300,
+                            shuffle=True, num_workers=2)
 
     net = Net(X_train.shape[1])
     # print(net)
@@ -149,23 +154,43 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             running_correct += np.sum(pred == labels.data.numpy())
             # if i % 20 == 19:
             #     print(f"[{epoch:2},{i+1:3}] Loss: {running_loss/20:.3f}, "
-            #           f"Accuracy: {100*running_correct/(20*len(outputs)):.1f}%")
+            #           f"Accuracy: "
+            #           f"{100*running_correct/(20*len(outputs)):.1f}%")
             #     running_loss = 0.0
             #     running_correct = 0
         if epoch % 10 == 9:
-            print(f"\t   [{epoch+1:2}] Loss: {running_loss/((i+1)):.3f}, "
-                  f"Accuracy: {100*running_correct/((i+1)*trainloader.batch_size):.1f}%")
-    running_loss = 0.0
-    running_correct = 0
+            print(f"   [{epoch+1:2}] "
+                  f"Loss: {running_loss/((i+1)):.3f}, Accuracy: "
+                  f"{100*running_correct/((i+1)*trainloader.batch_size):.1f}%")
+            running_loss = 0.0
+            running_correct = 0
+    val_loss = 0
+    correct = 0
+    for i, data in enumerate(testloader, 0):
+        inputs, labels = data
+        inputs, labels = Variable(inputs), Variable(labels)
+        net.eval()
+        output = net(inputs)
+        val_loss += F.binary_cross_entropy_with_logits(
+            output, labels.float()).data[0]
+        sigma_output = F.sigmoid(output)
+        pred = sigma_output.data.numpy() > .5
+        correct += np.sum(pred == labels.data.numpy())
+    val_loss /= len(testloader)
+    print(f"   -> Test set: Average loss: {val_loss:.4f}, "
+          f"Accuracy: {correct}/{((i+1)*testloader.batch_size)} "
+          f"({100. * correct/((i+1)*testloader.batch_size):.1f}%)")
+
     nets[k] = net
+    losses[k] = val_loss
 
 # Validation
 X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
 output = 0
-for net in nets:
+for k, net in enumerate(nets):
     net.eval()
-    output += net(X_val)
-output /= len(nets)
+    output += net(X_val) * 1/losses[k]
+output /= np.sum(1/losses)
 val_loss = F.binary_cross_entropy_with_logits(output, y_val).data[0]
 sigma_output = F.sigmoid(output)
 pred = sigma_output.data.numpy() > .5
