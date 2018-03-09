@@ -111,7 +111,8 @@ for k, (train, test) in enumerate(skf.split(X, y)):
                 inputs = Variable(inputs.cuda())
                 labels = Variable(labels.cuda())
             else:
-                inputs, labels = Variable(inputs), Variable(labels)
+                inputs = Variable(inputs)
+                labels = Variable(labels)
             optimizer.zero_grad()
             outputs = net(inputs)
             loss = criterion(outputs, labels.float())
@@ -137,7 +138,7 @@ for k, (train, test) in enumerate(skf.split(X, y)):
     correct = 0
     for i, data in enumerate(testloader, 0):
         inputs, labels = data
-        inputs, labels = Variable(inputs), Variable(labels)
+        inputs, labels = Variable(inputs, volatile=True), Variable(labels)
         if GPU:
             inputs.cuda()
             labels.cuda()
@@ -157,7 +158,8 @@ for k, (train, test) in enumerate(skf.split(X, y)):
     losses[k] = val_loss
 
 # Validation
-X_val, y_val = Variable(torch.Tensor(X_val)), Variable(torch.Tensor(y_val))
+X_val = Variable(torch.Tensor(X_val), volatile=True)
+y_val = Variable(torch.Tensor(y_val))
 if GPU:
     X_val.cuda()
     y_val.cuda()
