@@ -208,18 +208,29 @@ reduce variability further.
 The main problem of our base network was large overfitting to the
 training data. To prevent this, we tested multiple possible solutions.
 
-The first, obvious method, is to adjust the optimizer and its learning
-rate. The Adam method is very common in classification networks, but
-we also tested a simple stochastic gradient descent. We determined the
-optimal learning rate by cross-validation, taking into account the
-number of epochs to train the network. But the learning rate is not
-the only relevant hyperparameter: we can also introduce other
-regularisation methods, such as momentum for SGD and L2 regularisation
-(weight decay) for Adam. Weight decay has given excellent results to
-limit overfitting, and has improved the neural network results both in
-overall performance and in variability.
+The first, obvious method, is to adjust the optimizer and its
+\emph{learning rate}. The Adam method is very common in classification
+networks, but we also tested a simple stochastic gradient descent. We
+determined the optimal learning rate by cross-validation, taking into
+account the number of epochs to train the network. But the learning
+rate is not the only relevant hyperparameter: we can also introduce
+other regularisation methods, such as momentum for SGD and L2
+regularisation \emph{(weight decay)} for Adam. Weight decay has given
+excellent results to limit overfitting, and has improved the neural
+network results both in overall performance and in variability.
 
+The second important regularisation method is to add a \emph{dropout
+  layer} after the dense hidden layer. In our final configuration
+(determined by cross validation), 50\% of the hidden units are
+randomly set to zero during training. This helps a lot to control the
+variability of the output.
 
+Another method frequently used to control overfitting is \emph{batch
+  normalisation}. It allows to normalise each minibatch during
+training. As we normalise the entire dataset before training, it
+performs a similar operation after the hidden layer. However, neither
+the performance nor the variablity of the log loss was significantly
+impacted by this additional layer.
 
 \section{Ensembling trees}
 
