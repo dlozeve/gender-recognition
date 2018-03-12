@@ -13,7 +13,7 @@ from xgboost import XGBClassifier
 from autoencoder import train_autoencoder
 
 
-def preprocess(X, y, X_val, test_data, verbose=True,
+def preprocess(X, y, X_val, test_data, verbose=True, scale=True,
                autoencoder=True, qda=True, knn=False, xgb=False):
     if autoencoder:
         if verbose:
@@ -76,13 +76,14 @@ def preprocess(X, y, X_val, test_data, verbose=True,
         test_data = np.c_[test_data, test_data_xgb[:, 1]]
         print("done.")
 
-    if verbose:
-        print("## Scaling...", end=" ", flush=True)
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
-    X_val = scaler.transform(X_val)
-    test_data = scaler.transform(test_data)
-    if verbose:
-        print("done.")
+    if scale:
+        if verbose:
+            print("## Scaling...", end=" ", flush=True)
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        X_val = scaler.transform(X_val)
+        test_data = scaler.transform(test_data)
+        if verbose:
+            print("done.")
 
     return X, y, X_val, test_data
