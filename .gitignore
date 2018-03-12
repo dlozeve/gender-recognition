@@ -6,6 +6,7 @@ data/
 *.bbl
 *.bcf
 *.blg
+*.toc
 *.run.xml
 *.synctex.gz
 */auto/

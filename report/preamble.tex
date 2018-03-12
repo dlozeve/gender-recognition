@@ -1,0 +1,85 @@
+\usepackage{fontspec}
+
+\setmainfont[Numbers=OldStyle]{Linux Libertine O}
+\setsansfont[Numbers=OldStyle]{Linux Biolinum O}
+% \setmonofont{Inconsolata}
+\setmonofont[Scale=0.83]{Bitstream Vera Sans Mono}
+% \usepackage{lmodern}
+
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+
+\usepackage{graphicx}
+\usepackage{xcolor}
+%\usepackage{wrapfig}
+\usepackage{subcaption}
+%\usepackage{lettrine}
+%\usepackage{tikz}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+
+% \usepackage{unicode-math}
+% \setmathfont{texgyrepagella-math.otf}
+
+%\usepackage{pdfpages}
+
+\usepackage{microtype}
+
+%% Propriétés du document PDF
+\usepackage[unicode,colorlinks=true,linkcolor=blue]{hyperref}
+
+\hypersetup{
+  pdfauthor={P272},
+  pdftitle={Statistical Machine Learning: Assessed Practical},
+  pdfsubject={Assessed Practical},
+  pdfkeywords={stats,practical,report},
+  pdfpagemode=UseOutlines,
+  pdfpagelayout=TwoColumnRight
+}
+
+\renewcommand{\chapterautorefname}{section}
+
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+
+\usepackage{minted}
+\setminted[r]{autogobble,fontsize=\footnotesize}
+
+%% Pour la classe memoir /!\
+
+%% Marges
+\setulmarginsandblock{3cm}{3cm}{*}
+\setlrmarginsandblock{3cm}{3cm}{*}
+\checkandfixthelayout%
+
+%% Numérotation des divisions logiques
+\setsecnumdepth{subsection}
+\maxsecnumdepth{subsection}
+
+%% Profondeur de la ToC
+\settocdepth{subsection}
+\maxtocdepth{subsection}
+
+%% Style des titres des divisions logiques
+\setsecheadstyle{\sffamily\Large\scshape}
+\setsubsecheadstyle{\sffamily\large\scshape}
+
+%% style des environnements description
+%\renewcommand*{\descriptionlabel}[1]{\hspace\labelsep
+%  \normalfont\itshape #1}
+
+%% épigraphes
+%\setlength{\epigraphwidth}{0.5\textwidth}
+%\epigraphtextposition{flushleftright}
+
+
+\author{\sffamily\LARGE P244\and\LARGE P272\and\LARGE Pxxx}
+\date{\sffamily Week 8, Hilary Term 2018}
+\title{\sffamily\scshape\HUGE Statistical Machine Learning\\[.2em]
+\LARGE Assessed Practical}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "report"
+%%% End:
