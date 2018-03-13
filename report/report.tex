@@ -116,10 +116,10 @@ conservative when there is some doubt on the label.
 \section{Basic classifiers}
 
 Given the good separability of the data, we started by experimenting
-with very simple algorithms. Our first successful attempts was the
+with very simple algorithms. Our first successful attempt was the
 Quadratic Discriminant Analysis (QDA), which both ran almost
-instantaneously and yielded an accuracy over 98\%. K-Nearest
-neighbours with 10 neighbours had similar precision.
+instantaneously and yielded an accuracy over 98\%. $k$-nearest
+neighbours ($k$-nn) with 10 neighbours had similar precision.
 
 However, in both cases the log loss remained higher than even the
 simple logistic regression (even though its classification performance
@@ -153,9 +153,9 @@ final model.
 To try to derive interesting features from the data, one possibility
 is to use the predictions from lower-performing models as new
 covariates for the final model. We chose to use the outputs from the
-K-Neighbors and QDA for that purpose: since they are not linearly
-derived from the data, they may provide some information that would
-take a lot of computation for the neural network to find on its own.
+$k$-nn and QDA for that purpose: since they are not linearly derived
+from the data, they may provide some information that would take a lot
+of computation for the neural network to find on its own.
 
 We also tried to obtain condensed features with a simple autoencoder
 implemented with a multi-layers perceptron. It consists of three
@@ -308,6 +308,10 @@ very good results.
 \section{\texttt{preprocessing.py}}
 
 \inputminted[linenos,stepnumber=5]{python}{../preprocessing.py}
+
+\section{\texttt{autoencoder.py}}
+
+\inputminted[linenos,stepnumber=5]{python}{../autoencoder.py}
 
 \section{\texttt{deep.py}}
 
