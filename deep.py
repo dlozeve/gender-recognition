@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+"""Main script for the neural network ensembling model.
+
+When run, this script will:
+1. Import the data
+2. Split it into training and validation sets
+3. Preprocess the data using the `preprocessing` module
+4. Define the base class for the neural network
+5. Train several neural networks using cross-validation
+6. Compute a weighted average of the neural networks on the validation
+and submission sets
+
+"""
+
 import time
 
 import numpy as np
@@ -21,7 +34,7 @@ from sklearn.metrics import roc_auc_score
 from preprocessing import preprocess
 
 
-GPU = False
+GPU = False  # Set to True if training on GPU is required
 
 start_time = time.time()
 
@@ -29,7 +42,7 @@ print("# Loading data...", end=" ", flush=True)
 X = pd.read_csv("data/train.data.csv")
 y = pd.read_csv("data/train.labels.csv")
 test_data = pd.read_csv("data/test.data.csv")
-X = X.values
+X = X.values  # Convert the data to a numpy array
 y = y.values.ravel()
 test_data = test_data.values
 print("done.")
@@ -43,20 +56,25 @@ print("# Preprocessing")
 # X = np.c_[X, X_proj]
 # print("done.")
 
+# Separate the data into training and validation sets
 X, X_val, y, y_val = train_test_split(X, y, test_size=0.2, stratify=y)
 
+# Run the preprocessing function
 X, y, X_val, test_data = preprocess(X, y, X_val, test_data, verbose=True)
 
 
 # Neural net definition
 class Net(nn.Module):
-    def __init__(self, input_size):
+    """Main neural network for gender classification"""
+
+    def __init__(self, input_size, hidden_size=150):
+        """Initialize the network, by creating the required layers"""
         super(Net, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Linear(input_size, 150),
-            nn.BatchNorm1d(150, momentum=0.2),
-            nn.Dropout(0.5),
-            nn.ReLU()
+            nn.Linear(input_size, hidden_size),  # Dense layer
+            nn.BatchNorm1d(hidden_size, momentum=0.2),  # Batch normalization
+            nn.Dropout(0.5),  # Dropout 50%
+            nn.ReLU()  # Activation function
         )
         # self.layer2 = nn.Sequential(
         #     nn.Linear(150, 64),
@@ -65,10 +83,11 @@ class Net(nn.Module):
         #     nn.ReLU()
         # )
         self.output = nn.Sequential(
-            nn.Linear(150, 1)
+            nn.Linear(hidden_size, 1)  # Output layer: Dense
         )
 
     def forward(self, x):
+        """Evaluate the network on batch x"""
         x = self.layer1(x)
         # x = self.layer2(x)
         x = self.output(x)
@@ -77,8 +96,9 @@ class Net(nn.Module):
 
 # Training
 print("# Training the Neural Networks...", flush=True)
-nets = list(range(20))
-losses = np.zeros(len(nets))
+nets = list(range(20))  # Ensemble of NNs
+losses = np.zeros(len(nets))  # Loss of each neural net
+# Train-test split of the training dataset for each network
 skf = StratifiedShuffleSplit(n_splits=len(nets), test_size=0.15)
 for k, (train, test) in enumerate(skf.split(X, y)):
     X_train = X[train, :]
@@ -87,6 +107,7 @@ for k, (train, test) in enumerate(skf.split(X, y)):
     y_test = y[test]
 
     print(f"## Training neural net {k}")
+    # SUbdivide the training and testing data into batches
     trainset = TensorDataset(torch.Tensor(X_train), torch.Tensor(y_train))
     trainloader = DataLoader(trainset, batch_size=300,
                              shuffle=True, num_workers=2)
@@ -94,16 +115,18 @@ for k, (train, test) in enumerate(skf.split(X, y)):
     testloader = DataLoader(testset, batch_size=300,
                             shuffle=True, num_workers=2)
 
-    net = Net(X_train.shape[1])
+    net = Net(X_train.shape[1])  # Create the k-th neural net
     if GPU:
         net.cuda()
     # print(net)
+    # Loss function: sigmoid activation + Binary Cross Entropy = log loss
     criterion = nn.BCEWithLogitsLoss()
+    # Optimizer: Adam, with appropriate learning rate and L2 regularization
     optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=1e-3)
     if GPU:
         criterion.cuda()
 
-    for epoch in range(20):
+    for epoch in range(20):  # Train the network for 20 epochs
         running_loss = 0.0
         running_correct = 0
         for i, data in enumerate(trainloader, 0):
@@ -114,13 +137,15 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             else:
                 inputs = Variable(inputs)
                 labels = Variable(labels)
+            # Zero out the gradients in the neural network
             optimizer.zero_grad()
-            outputs = net(inputs)
-            loss = criterion(outputs, labels.float())
-            loss.backward()
-            optimizer.step()
+            outputs = net(inputs)  # Evaluate the neural net on the inputs
+            loss = criterion(outputs, labels.float())  # Compute the loss
+            loss.backward()  # Propagate the gradients
+            optimizer.step()  # Gradient descent
 
             running_loss += loss.data[0]
+            # Apply activation function (sigmoid) on the output of the NN
             pred = F.sigmoid(outputs).cpu().data.numpy() > .5
             running_correct += np.sum(pred == labels.cpu().data.numpy())
             # if i % 20 == 19:
@@ -129,7 +154,7 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             #           f"{100*running_correct/(20*len(outputs)):.1f}%")
             #     running_loss = 0.0
             #     running_correct = 0
-        if epoch % 10 == 9:
+        if epoch % 10 == 9:  # Log the training loss and accuracy
             print(f"   [{epoch+1:2}] "
                   f"Loss: {running_loss/((i+1)):.3f}, Accuracy: "
                   f"{100*running_correct/((i+1)*trainloader.batch_size):.1f}%")
@@ -137,6 +162,7 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             running_correct = 0
     val_loss = 0
     correct = 0
+    # Compute the log loss and accuracy on the testing set
     for i, data in enumerate(testloader, 0):
         inputs, labels = data
         inputs, labels = Variable(inputs, volatile=True), Variable(labels)
@@ -144,7 +170,8 @@ for k, (train, test) in enumerate(skf.split(X, y)):
             inputs.cuda()
             labels.cuda()
         net.eval()
-        output = net(inputs)
+        output = net(inputs)  # Evaluate the neural net on the test input
+        # Compute the log loss (sigmoid activation + BCE)
         val_loss += F.binary_cross_entropy_with_logits(
             output, labels.float()).cpu().data[0]
         sigma_output = F.sigmoid(output)
@@ -165,6 +192,8 @@ if GPU:
     X_val.cuda()
     y_val.cuda()
 output = 0
+# Compute a weighted average of the predictions using the inverse of
+# the log-loss as weights:
 for k, net in enumerate(nets):
     net.eval()
     output += net(X_val) * 1/losses[k]
@@ -179,6 +208,7 @@ print(f"\n=> Validation set: Average loss: {val_loss:.4f}, "
       f"Accuracy: {correct}/{len(y_val)} "
       f"({100. * correct/len(y_val):.1f}%)\n")
 
+# Evaluate on the test data for submission on Kaggle
 test_data = Variable(torch.Tensor(test_data))
 if GPU:
     test_data.cuda()
@@ -190,10 +220,12 @@ output /= np.sum(1/losses)
 sigma_output = F.sigmoid(output)
 print(sigma_output.cpu().data)
 
+# Create a Pandas dataframe and save it as a CSV
 submission = pd.DataFrame({'Id': range(1, 15001),
                            'ProbFemale': sigma_output.cpu().data})
 submission = submission[['Id', 'ProbFemale']]
 submission.to_csv("submission.csv", index=False)
 
+# Log total elapsed time
 time_elapsed = time.time() - start_time
 print(time.strftime("Timing: %Hh %Mm %Ss", time.gmtime(time_elapsed)))

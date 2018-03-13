@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+"""Preprocessing module.
+
+Exports a function to preprocess the data with several possible
+methods, including:
+- scaling
+- autoencoder (using the `autoencoder` module)
+- quadratic discriminant analysis
+- k-nearest neighbours
+- gradient boosting trees (XGBoost)
+
+"""
+
 import numpy as np
 
 import torch
@@ -15,6 +27,27 @@ from autoencoder import train_autoencoder
 
 def preprocess(X, y, X_val, test_data, verbose=True, scale=True,
                autoencoder=True, qda=True, knn=False, xgb=False):
+    """Preprocess the data by adding features and scaling it.
+
+    For each method, we train the model on the training data using the
+    corresponding labels, then apply the same transformation to
+    validation and test data.
+
+    Args:
+        X (numpy ndarray): Training data
+        y (numpy ndarray): Training labels
+        X_val (numpy ndarray): Validation data
+        test_data (numpy ndarray): Test data for submission
+        verbose (bool): log level
+        scale (bool): scale the data
+        autoencoder (bool): use autoencoder feature
+        qda (bool): use Quadratic Discriminant Analysis feature
+        knn (bool): use k-nearest neighbours feature
+        xgb (bool): use XGBoost feature
+
+    Returns:
+        The dataset appropriately transformed by the selected methods.
+    """
     if autoencoder:
         if verbose:
             print("## Autoencoder")
