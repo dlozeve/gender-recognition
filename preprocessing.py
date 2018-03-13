@@ -13,10 +13,8 @@ methods, including:
 """
 
 import numpy as np
-
 import torch
 from torch.autograd import Variable
-
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
