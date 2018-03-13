@@ -48,7 +48,7 @@
   an individual in a picture. More precisely, using a set of features
   derived from the original images, we try to fit a machine learning
   model that can accurately classify individuals as male and female,
-  and accurately represent its confidence in the classification.
+  and represent its confidence in the classification.
 
   The performance of the model was evaluated through a Kaggle
   competition, in which we submitted predictions as team ``The Poisson
@@ -74,9 +74,9 @@ roughly centred and have standard deviations close to 0.9.
 The exploratory data analysis does not show any feature particularly
 standing out. After a PCA, even the first principal component carries
 only around 3\% of the total variance, which suggests variability is
-widespread across features. Likewise, the Spearman correlation between
-individual features and the labels are rather low (all between -0.3
-and 0.3 with most much closer to 0).
+widespread across features. Likewise, the Spearman correlations
+between individual features and the labels are rather low (all between
+-0.3 and 0.3 with most much closer to 0).
 
 Despite this lack of interpretability of the features, the data shows
 good separability. A simple logistic regression gives 92\% accuracy
@@ -122,7 +122,7 @@ instantaneously and yielded an accuracy over 98\%. $k$-nearest
 neighbours ($k$-nn) with 10 neighbours had similar precision.
 
 However, in both cases the log loss remained higher than even the
-simple logistic regression (even though its classification performance
+simple logistic regression (even though its classification accuracy
 was lower). This is because the previous algorithms are not
 well-calibrated: the exact value that they give when predicting a
 probability is not representative of their true classification
@@ -139,7 +139,7 @@ below 0.1.
 
 Having gone through those and a number of other standard methods, we
 turned to deep learning for comparison. After minimal tuning, a
-Multi-Layer Perceptron (MLP) with two hidden layers gave an average
+Multi-Layer Perceptron (MLP) with one hidden layers gave an average
 log loss around 0.08. Considering the wide gap between the performance
 of this algorithm and the others, we chose to focus the rest of our
 study on neural models.
@@ -151,11 +151,12 @@ final model.
 \section{Generating new features}
 
 To try to derive interesting features from the data, one possibility
-is to use the predictions from lower-performing models as new
-covariates for the final model. We chose to use the outputs from the
-$k$-nn and QDA for that purpose: since they are not linearly derived
-from the data, they may provide some information that would take a lot
-of computation for the neural network to find on its own.
+is to use the predictions (i.e.\ the probability of a female picture)
+from lower-performing models as new covariates for the final model. We
+chose to use the outputs from the $k$-nn and QDA for that purpose:
+since they are not linearly derived from the data, they may provide
+some information that would take a lot of computation for the neural
+network to find on its own.
 
 We also tried to obtain condensed features with a simple autoencoder
 implemented with a multi-layers perceptron. It consists of three
@@ -164,10 +165,10 @@ hidden layer is composed of 32 neurons. By training the NN with
 identical input and output, the weights are such that the output of
 the hidden layer is an encoding that minimises the loss of
 information. Theoretically, this allows for a more informative
-representation of the data since the compressed representation from
-the hidden layer will reduce the noise of the data and keep its most
-informative, so that the output layer can decode this representation
-and reconstruct the initial data.
+representation since the compressed representation from the hidden
+layer will reduce the noise of the data and keep its most informative,
+so that the output layer can decode this representation and
+reconstruct the initial data.
 
 The third path we explored to generate new features was to use
 non-linear embeddings of the data in lower-dimensional space. As
