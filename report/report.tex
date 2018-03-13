@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt,openany,extrafontsizes,oneside,article]{memoir}
+\documentclass[a4paper,11pt,openany,extrafontsizes,oneside,article,twocolumn]{memoir}
 
 %%\directlua{pdf.setminorversion(3)}
 
@@ -14,13 +14,9 @@
 \newcommand{\loglkh}{\ln(\widehat{L})}
 \newcommand{\ypred}{\widehat{Y}}
 \newcommand{\eg}{\textit{e.g.~}}
-\newcommand{\sautLigne}{
-
-  \vspace{0.3cm}}
 \newcommand{\expectation}[1]{\mathbb{E}[#1]}
 \newcommand{\var}[1]{Var[#1]}
 \newcommand{\RP}{\textcolor{red}{\large{\textbf{TBC~}}}}
-
 \newcommand{\fbf}{\texttt{BF}}
 \newcommand{\yTrue}{y}
 \newcommand{\yPred}{\hat{y}}
@@ -30,14 +26,7 @@
 \newcommand{\thtk}{\widetilde{\theta_k}}
 \newcommand{\fhome}{\texttt{Home}}
 \newcommand{\fpos}{\texttt{Pos}}
-
 \newcommand{\sq}{$^{\text{2}}$}
-
-\begin{document}
-
-\tightlists%
-
-\maketitle
 
 %% Style de chapitre
 %\chapterstyle{}
@@ -46,9 +35,15 @@
 \renewcommand{\chapnumfont}{\sffamily\LARGE\scshape}
 \renewcommand{\chaptitlefont}{\sffamily\LARGE\scshape}
 
-\tableofcontents*
+\tightlists%
 
-\begin{abstract}
+
+\begin{document}
+
+\twocolumn[
+\maketitle
+
+\begin{onecolabstract}
   In this report, we consider the problem of determining the gender of
   an individual in a picture. More precisely, using a set of features
   derived from the original images, we try to fit a machine learning
@@ -58,36 +53,45 @@
   The performance of the model was evaluated through a Kaggle
   competition, in which we submitted predictions as team ``The Poisson
   Fishermen''.
-\end{abstract}
+\end{onecolabstract}
 
+\tableofcontents*
 \newpage
+]
+
+
 
 \chapter{The data}
 
 The data available are pre-processed data from male and female
 pictures. Each picture is represented by a 128-numbers long vector of
 features and a label: 0 for male, 1 for female.
-    
+
 The labelled training set is composed of 15 000 observations, about
 half of which are of female individuals. The recorded features are all
-roughly centered and have standard deviations close to $0.9$.
-    
-Exploratory data analysis does not show any feature particularly
+roughly centred and have standard deviations close to 0.9.
+
+The exploratory data analysis does not show any feature particularly
 standing out. After a PCA, even the first principal component carries
 only around 3\% of the total variance, which suggests variability is
 widespread across features. Likewise, the Spearman correlation between
-indiviudal features and the labels are rather low (all between -0.3
+individual features and the labels are rather low (all between -0.3
 and 0.3 with most much closer to 0).
-    
-Despite this lack of interpretability of the features, the data shows
-good separability.A simple logistic regression gives 92\% accuracy
-when predicting the labels. Likewise, using T-SNE (t-distributed
-stochastic neighbor embedding), an unsupervised method that give a 2D
-representation of the dataset, clearly separates males and
-females. This is promising for the task at hand, since it means that
-separation of males and females is quite feasible.
-% \includegraphics[tsne]{} %projection du dataset
 
+Despite this lack of interpretability of the features, the data shows
+good separability. A simple logistic regression gives 92\% accuracy
+when predicting the labels. Likewise, using T-SNE (t-distributed
+stochastic neighbour embedding), an unsupervised method that give a 2D
+representation of the dataset, clearly separates most males and
+females (\autoref{fig.tsne}). This is promising for the task at hand,
+since it means that separation of males and females is quite feasible.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{tsne}
+  \caption{Unsupervised 2-dimensional embedding of the data}%
+  \label{fig.tsne}
+\end{figure}
 
 \section{Evaluating of the model}
 
@@ -100,7 +104,12 @@ a wrong prediction is very heavily penalized. This means that not only
 classification should be accurate, but predictions must also be
 conservative when there is some doubt on the label.
 
-%\includegraphics[logloss]{} % juste le profil de la logloss pour faire un peu de décor
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{loss}
+  \caption{Log loss when the true label is 1}%
+  \label{fig.loss}
+\end{figure}
 
 \chapter{Building the model}
 
@@ -118,14 +127,15 @@ was lower). This is because the previous algorithms are not
 well-calibrated: the exact value that they give when predicting a
 probability is not representative of their true classification
 performance. This causes them to be over- or under-confident in their
-probability estimates and they are thus heavily penalized by the log
+probability estimates, and they are thus heavily penalized by the log
 loss metric. Although some methods exist to calibrate such algorithms
 (using an isotonic regression for instance), we chose to move on to
 algorithms that could directly optimize the right metric.
-    
-This is the case of the xgboost package, which can perform gradient
-boosting on trees using a log loss. This method showed promising
-results but failed to consistently bring the average loss below 0.1.
+
+This is the case of the \texttt{xgboost} package, which can perform
+gradient boosting on trees using a log loss. This method showed
+promising results but failed to consistently bring the average loss
+below 0.1.
 
 Having gone through those and a number of other standard methods, we
 turned to deep learning for comparison. After minimal tuning, a
@@ -137,16 +147,16 @@ study on neural models.
 Before moving on to more complex neural network, we tried to make use
 of the work mentioned above to derive some useful features for our
 final model.
-    
+
 \section{Generating new features}
 
-To try and derive interesting features from the data, one possibility
+To try to derive interesting features from the data, one possibility
 is to use the predictions from lower-performing models as new
 covariates for the final model. We chose to use the outputs from the
 K-Neighbors and QDA for that purpose: since they are not linearly
 derived from the data, they may provide some information that would
 take a lot of computation for the neural network to find on its own.
-    
+
 We also tried to obtain condensed features with a simple autoencoder
 implemented with a multi-layers perceptron. It consists of three
 layers: the input and the output are composed of 128 nodes, while the
@@ -167,7 +177,7 @@ embedding and T-SNE.\@ We experimented with those, adding the
 projected coordinates as new covariates for the neural model.
 
 All in all, the most successful addition was that of the QDA, which
-gave the model a noticeable improvement. Some of the other artificial
+gave the model a noticeable improvement. Some other artificial
 features appeared to give a slight boost to the classification but
 since the difference was extremely small and the computation of these
 features quite costly, we chose to keep only the QDA.\@
@@ -192,15 +202,11 @@ split between the training and validation data. This high variability
 in the performance, associated with the large difference between the
 training and validation error, called for regularization.
 
-L2 regularization, implemented through weight decay improved the
-overall performance but did not do much to reduce variability. Dropout
---- disabling some of the neurons during training to force
-generalization --- had a similar effect. We also experimented with
-batch normalization which did not help much.
+The final neural network has a single hidden layer of 150 units.
 
 The end result of our efforts was to bring our public leaderboard
 score do 0.074. In local validation, performance varied wildly, from
-0.065 to almost 0.08. This is what led us to try and find a way to
+0.065 to almost 0.08. This is what led us to try to find a way to
 reduce variability further.
 
 \section{Preventing overfitting}
@@ -214,12 +220,12 @@ networks, but we also tested a simple stochastic gradient descent. We
 determined the optimal learning rate by cross-validation, taking into
 account the number of epochs to train the network. But the learning
 rate is not the only relevant hyperparameter: we can also introduce
-other regularisation methods, such as momentum for SGD and L2
+other regularization methods, such as momentum for SGD and L2
 regularisation \emph{(weight decay)} for Adam. Weight decay has given
 excellent results to limit overfitting, and has improved the neural
 network results both in overall performance and in variability.
 
-The second important regularisation method is to add a \emph{dropout
+The second important regularization method is to add a \emph{dropout
   layer} after the dense hidden layer. In our final configuration
 (determined by cross validation), 50\% of the hidden units are
 randomly set to zero during training. This helps a lot to control the
@@ -229,34 +235,83 @@ Another method frequently used to control overfitting is \emph{batch
   normalisation}. It allows to normalise each minibatch during
 training. As we normalise the entire dataset before training, it
 performs a similar operation after the hidden layer. However, neither
-the performance nor the variablity of the log loss was significantly
+the performance nor the variability of the log loss was significantly
 impacted by this additional layer.
 
-\section{Ensembling trees}
+\section{Ensemble of Neural Networks}
 
-% describe the ensembling process, say it brought the error to .071 on the leaderboard
-% emphasize that the results are still very unstable + graphicsplots of the residuals
-Then the final probability is a weighted average of the output of each
-model. The weights are based on the performances of this NN (measured
-by cross-validation).  [Add weights formula \RP]
+To limit variability, we also used \emph{ensembling methods}. The
+general idea is to train several simple neural networks instead of a
+single large one, and averaging their outputs.
 
-\section{The road to 0.06}
+In our model, we train each network on a separate part of the training
+set. That is, for each network, the training set is itself subdivided
+into a training and testing set. We can then assess the performance of
+each network, and the outputs of the networks are averaged to form a
+final prediction.  The final output is the tested on the overall
+validation set.
+
+Note that the outputs of the networks are averaged before applying the
+sigmoid activation function. We also use the validation error from the
+test set of each network: the weight given to each network when
+averaging is inversely proportional to its validation error. The
+double cross validation scheme allows us to make the best out of the
+ensemble method.
+
+\section{Computational considerations}
+
+All the algorithms that we used can be parallelised over multiple
+processors, which leads to a huge speedup, especially in the
+ensembling model. We have also tried training the neural networks with
+a GPU, but the speedup is not significant. The small size of the
+networks may not lead to a large advantage compared to the cost of
+moving the data to the GPU before each computation.
+    
     
 \chapter{Conclusion}
-%%%%%%%% Dire que si on veut améliorer encore plus il va falloir faire des ensembles avec 
-% des modèles différents ou changer d'approche
-% Ajouter que de toute façon en vrai on est déjà à genre 99% d'accuracy et 0.999 AUC donc 
-% que vu le coût en calcul le plus raisonnable est d'utiliser le MLP (relativement rapide, très bonne performance) ou la QDA (instantané, bonne performance surtout si calibré)
 
+The results from the ensemble are still quite variable. On average, we
+achieve a validation error around 0.065, although on the leaderboard
+the best we achieved was 0.070 --- most probably due to overfitting
+and the variability in the performance of our model. Several other
+teams surpassed us by a very small margin (about a dozen teams between
+0.068 and 0.071) which can be attributed to randomness; but a few did
+significantly better, enough to prove that some progress is still
+feasible.
+
+One lead that we could still explore would be to ensemble the results
+from many kind of models, in order to leverage each one's
+strengths. Another possibility is to train a model on the residuals of
+our current model. The role of this secondary model would be to
+predict the cases when our model is most wrong, and rectify those
+occurrences.
+
+All in all, besides the technical feat, for most purposes it is
+plausible that there would be no strong incentive to keep making the
+model more complex. Indeed, a very small and fast neural network
+already achieves over 97\% accuracy and 0.99 AUC, and less than 0.08
+log loss with a very short training time. It seems that we will not
+get below 0.05 at best with the available data, and it would require
+significantly more computing for what is a marginal improvement. Apart
+from cases when this very small advantage proves useful, one will be
+best served using a basic neural network, or even the Quadratic
+Discriminant analysis, whose computation is almost instantaneous for
+very good results.
 
 
 
 \backmatter%
+\onecolumn%
 
-% \chapter{R code}%
-% \label{cha:r-code}
+\chapter{Python code}
 
-% \inputminted[linenos,stepnumber=5]{r}{../assessed3.R}
+\section{\texttt{preprocessing.py}}
+
+\inputminted[linenos,stepnumber=5]{python}{../preprocessing.py}
+
+\section{\texttt{deep.py}}
+
+\inputminted[linenos,stepnumber=5]{python}{../deep.py}
 
 %\listoffigures
 
