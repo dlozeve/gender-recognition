@@ -1,0 +1,10 @@
+* Female/male image recognition
+
+Assessed Practical: Statistical Machine Learning
+
+MSc in Statistical Science, Department of Statistics, University of
+Oxford
+
+See the description on the [[https://www.kaggle.com/c/sm4-assessed-practical][Kaggle challenge page]].
+
+
